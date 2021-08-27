@@ -13,9 +13,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package chores
 
-var exec_collect_cmds = []string{
+import "sync"
+
+var Exec_Collect_Cmds = []string{
 	"net user",
 	"query user",
 	"systeminfo",
@@ -36,7 +38,7 @@ var exec_collect_cmds = []string{
 	"tasklist /svc",
 }
 
-var exec_collect_cmds_comment = []string{
+var Exec_Collect_Cmds_Comment = []string{
 	"用户账户信息", "当前登录会话信息", "系统信息", "ARP缓存", "网络配置", "当前网络连接情况",
 	"当前网络路由表", "反病毒软件安装", "通过MSI安装的软件信息", "系统补丁情况", "自启动情况", "注册表App Path项", "MSTSC记录的RDP连接", "计划任务(老)",
 	"计划任务(新)", "计划任务详情(新)", "进程列表(详)", "进程列表(含服务)",
@@ -48,6 +50,13 @@ type CmdOutput struct {
 	CmdOutput  string
 }
 
-type finalResults struct {
-	CmdOutputs []CmdOutput
+type FinalResults struct {
+	Mu         *sync.RWMutex
+	CmdOutputs []*CmdOutput
+}
+
+func (f *FinalResults) Add(cmdOutputData *CmdOutput) {
+	defer f.Mu.Unlock()
+	f.Mu.Lock()
+	f.CmdOutputs = append(f.CmdOutputs, cmdOutputData)
 }

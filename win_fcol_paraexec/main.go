@@ -15,8 +15,105 @@
 
 package main
 
-import "log"
+import (
+	"bufio"
+	"fcol_paraexec/chores"
+	"log"
+	"os"
+	"os/exec"
+	"runtime"
+	"sync"
+	"text/template"
+)
+
+func execCmd(command string) string {
+	cmd := exec.Command("C:\\Windows\\System32\\cmd.exe", "/c", command)
+	outputs, err := cmd.CombinedOutput()
+	var foutputs []byte
+	if err != nil {
+		foutputs = []byte("Fatal Error: " + err.Error() + "\r\n\r\n")
+	}
+	foutputs = append(foutputs, outputs...)
+	return string(foutputs)
+}
+
+func parseAndExec(sIptChan chan *chores.CmdOutput, resLst *chores.FinalResults, wg *sync.WaitGroup) {
+	log.Println("Debug: Start Processing Task")
+	for {
+		tempCmd, hasMore := <-sIptChan
+		if hasMore {
+			tempCmd.CmdOutput = execCmd(tempCmd.CmdDetail)
+			resLst.Add(tempCmd)
+			log.Println("Debug: End Processing Task")
+		} else {
+			wg.Done()
+			break
+		}
+	}
+}
 
 func main() {
+	runThreads := runtime.NumCPU() - 1
+	runtime.GOMAXPROCS(runThreads)
 	log.Println("Start Working...")
+	// initiate storage
+	var finalres = &chores.FinalResults{
+		CmdOutputs: make([]*chores.CmdOutput, 0),
+		Mu:         &sync.RWMutex{},
+	}
+	iptchan := make(chan *chores.CmdOutput)
+	// initiate html template engine
+	tpl, err := template.New("cmdRes").Parse(chores.CmdResTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// check data validity
+	if len(chores.Exec_Collect_Cmds) != len(chores.Exec_Collect_Cmds_Comment) {
+		log.Fatal("Commands are not corresponding to its comments.")
+	}
+	// build coroutine wait group
+	var wg = sync.WaitGroup{}
+	// build workers and go for tasks
+	for i := 0; i < runThreads; i++ {
+		log.Println("Debug: Start Build worker, i=", i)
+		wg.Add(1)
+		go parseAndExec(iptchan, finalres, &wg)
+		log.Println("Debug: End Build worker, i=", i)
+	}
+	// parse data and go
+	j := 0
+	for j < len(chores.Exec_Collect_Cmds)-1 {
+		log.Println("Debug: Start Send Tasks to Input Channel, j=", j)
+		var tempCmd = &chores.CmdOutput{
+			CmdDetail:  chores.Exec_Collect_Cmds[j],
+			CmdComment: chores.Exec_Collect_Cmds_Comment[j],
+		}
+		iptchan <- tempCmd
+		j++
+		log.Println("Debug: End Send Tasks to Input Channel, j=", j)
+	}
+	close(iptchan)
+	// read the output and close the channels
+	wg.Wait()
+	// generate html
+	f, err := os.Create("resultb.html")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	html_w := bufio.NewWriter(f)
+	err = tpl.Execute(html_w, finalres)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	// flush buffer and close file
+	err = html_w.Flush()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = f.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	// log exit
+	log.Println("End Working...")
 }
