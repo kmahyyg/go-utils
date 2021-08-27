@@ -47,13 +47,20 @@ const CmdResTemplate = `
             .mytitle{
                 vertical-align: middle;
                 text-align: center;
-                margin: 0px auto;
+                margin: 2px auto;
             }
-            #footer{
+            footer{
                 display: table;
                 text-align: center;
                 margin-left: auto;
                 margin-right: auto;
+            }
+            .custom-detail{
+                height: 400px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                overflow-x: scroll;
+                overflow-y: scroll;
             }
         </style>
     </head>
@@ -76,11 +83,11 @@ const CmdResTemplate = `
                 <div class="col-3">
                     {{.CmdComment}}
                 </div>
-                <div class="col-3">
+                <div class="col-3 custom-detail">
                     {{.CmdDetail}}
                 </div>
                 <div class="col-6">
-                    <pre><code>{{.CmdOutput}}</code></pre>
+                    <pre><code class="custom-detail">{{.CmdOutput}}</code></pre>
                 </div>
             </div>
             {{end}}

@@ -38,13 +38,11 @@ func execCmd(command string) string {
 }
 
 func parseAndExec(sIptChan chan *chores.CmdOutput, resLst *chores.FinalResults, wg *sync.WaitGroup) {
-	log.Println("Debug: Start Processing Task")
 	for {
 		tempCmd, hasMore := <-sIptChan
 		if hasMore {
 			tempCmd.CmdOutput = execCmd(tempCmd.CmdDetail)
 			resLst.Add(tempCmd)
-			log.Println("Debug: End Processing Task")
 		} else {
 			wg.Done()
 			break
@@ -75,22 +73,18 @@ func main() {
 	var wg = sync.WaitGroup{}
 	// build workers and go for tasks
 	for i := 0; i < runThreads; i++ {
-		log.Println("Debug: Start Build worker, i=", i)
 		wg.Add(1)
 		go parseAndExec(iptchan, finalres, &wg)
-		log.Println("Debug: End Build worker, i=", i)
 	}
 	// parse data and go
 	j := 0
 	for j < len(chores.Exec_Collect_Cmds)-1 {
-		log.Println("Debug: Start Send Tasks to Input Channel, j=", j)
 		var tempCmd = &chores.CmdOutput{
 			CmdDetail:  chores.Exec_Collect_Cmds[j],
 			CmdComment: chores.Exec_Collect_Cmds_Comment[j],
 		}
 		iptchan <- tempCmd
 		j++
-		log.Println("Debug: End Send Tasks to Input Channel, j=", j)
 	}
 	close(iptchan)
 	// read the output and close the channels

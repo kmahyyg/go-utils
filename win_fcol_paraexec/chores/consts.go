@@ -30,7 +30,7 @@ var Exec_Collect_Cmds = []string{
 	"wmic product get name,version",
 	"wmic startup list full",
 	"REG QUERY \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\"",
-	"REG QUERT \"HKEY_CURRENT_USER\\Software\\Microsoft\\Terminal Server Client\\Servers\" /s",
+	"REG QUERY \"HKEY_CURRENT_USER\\Software\\Microsoft\\Terminal Server Client\\Servers\" /s",
 	"at",
 	"schtasks /query",
 	"schtasks /query /fo list /v",
